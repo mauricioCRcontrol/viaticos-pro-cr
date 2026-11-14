@@ -1314,11 +1314,27 @@ function doPost(e) {
                     for (const d of initialDrivers) {
                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'drivers', d.id), d);
                     }
-                } else {
-                    driversList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderAdminPanelData();
-                    if (activeDriverId) renderDriverPanelData();
                 }
+                
+                // Actualizar siempre la lista con lo que hay en la base de datos (incluso si se añadieron desde el panel)
+                driversList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Si la base de datos tenía menos de 3 conductores por alguna razón, forzar inyección de los faltantes
+                const existingIds = driversList.map(d => d.id);
+                const defaultDrivers = [
+                    { id: 'drv-camion-1', unit: 'CAMION 1', name: 'JHONATHAN OROZCO', plate: '383993', model: 'CAPTAIN', bank: 'Banco Davivienda', iban: 'CR69010401046641295018', initialBalance: 0, pin: '1234' },
+                    { id: 'drv-camion-2', unit: 'CAMION 2', name: 'ALEXANDER RAMIREZ', plate: '386031', model: 'OFAC', bank: 'Banco Davivienda', iban: 'CR75010401046641317317', initialBalance: 0, pin: '1234' },
+                    { id: 'drv-camion-3', unit: 'CAMION 3', name: 'ESTEBAN SALAS', plate: 'AGV-880-8', model: 'OFAC', bank: 'BAC Credomatic', iban: 'CR16010200009207476235 (SINPE: 83635384)', initialBalance: 0, pin: '1234' }
+                ];
+                
+                for (const defDrv of defaultDrivers) {
+                    if (!existingIds.includes(defDrv.id)) {
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'drivers', defDrv.id), defDrv);
+                    }
+                }
+
+                renderAdminPanelData();
+                if (activeDriverId) renderDriverPanelData();
             }, (err) => console.error(err));
 
             // Escuchar Transferencias
